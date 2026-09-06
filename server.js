@@ -8,6 +8,8 @@ const authRoutes = require("./routes/authRoutes");
 const studentRoutes = require("./routes/studentRoutes");
 const hostelRoutes = require("./routes/hostelRoutes");
 const roomRoutes = require("./routes/roomRoutes");
+const roomAllocationRoutes =require("./routes/roomAllocationRoutes");
+const adminRoutes =require("./routes/adminRoutes");
 
 const app = express();
 
@@ -24,6 +26,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/hostels", hostelRoutes);
 app.use("/api/rooms", roomRoutes);
+app.use("/api/room-allocations", roomAllocationRoutes);
+app.use("/api/admin",adminRoutes);
+
+
 
 const PORT = process.env.PORT || 5000;
 

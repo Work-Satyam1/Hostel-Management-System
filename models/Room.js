@@ -14,39 +14,32 @@ const roomSchema = new mongoose.Schema(
             trim: true
         },
 
+        floor: {
+            type: Number,
+            required: true
+        },
+
         capacity: {
             type: Number,
             required: true,
             min: 1
         },
 
-        occupiedBeds: {
+        occupied: {
             type: Number,
             default: 0,
             min: 0
         },
 
-        floor: {
-            type: Number,
-            required: true
-        },
-
         status: {
             type: String,
-            enum: ["available", "full"],
+            enum: ["available", "full", "maintenance"],
             default: "available"
         }
     },
     {
         timestamps: true
     }
-);
-
-// Same room number can exist in different hostels,
-// but not twice inside the same hostel.
-roomSchema.index(
-    { hostel: 1, roomNumber: 1 },
-    { unique: true }
 );
 
 module.exports = mongoose.model("Room", roomSchema);

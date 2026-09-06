@@ -2,8 +2,11 @@ const express = require("express");
 
 const router = express.Router();
 
-const authMiddleware = require("../middleware/authMiddleware");
-const adminMiddleware = require("../middleware/adminMiddleware");
+const authMiddleware =
+    require("../middleware/authMiddleware");
+
+const adminMiddleware =
+    require("../middleware/adminMiddleware");
 
 const {
     createHostel,
@@ -11,7 +14,9 @@ const {
 } = require("../controllers/hostelController");
 
 
-// Only ADMIN can create hostel
+// =================================
+// CREATE HOSTEL - ADMIN ONLY
+// =================================
 router.post(
     "/",
     authMiddleware,
@@ -20,7 +25,9 @@ router.post(
 );
 
 
-// Any authenticated user can view hostels
+// =================================
+// GET HOSTELS - LOGGED IN USERS
+// =================================
 router.get(
     "/",
     authMiddleware,

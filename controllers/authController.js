@@ -2,59 +2,11 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const registerUser = async (req, res) => {
-    try {
-        const {
-            name,
-            email,
-            password
-        } = req.body;
 
-        if (!name || !email || !password) {
-            return res.status(400).json({
-                message: "Please provide name, email and password"
-            });
-        }
-
-        const existingUser = await User.findOne({ email });
-
-        if (existingUser) {
-            return res.status(400).json({
-                message: "User already exists"
-            });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Every self-registered user is a student
-        const user = await User.create({
-            name,
-            email,
-            password: hashedPassword,
-            role: "student"
-        });
-
-        res.status(201).json({
-            message: "User registered successfully",
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role
-            }
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            message: "Server error",
-            error: error.message
-        });
-    }
-};
-
-
+// LOGIN
 const loginUser = async (req, res) => {
     try {
+
         const { email, password } = req.body;
 
         if (!email || !password) {
@@ -71,10 +23,8 @@ const loginUser = async (req, res) => {
             });
         }
 
-        const isPasswordCorrect = await bcrypt.compare(
-            password,
-            user.password
-        );
+        const isPasswordCorrect =
+            await bcrypt.compare(password, user.password);
 
         if (!isPasswordCorrect) {
             return res.status(401).json({
@@ -95,7 +45,9 @@ const loginUser = async (req, res) => {
 
         res.status(200).json({
             message: "Login successful",
+
             token,
+
             user: {
                 id: user._id,
                 name: user.name,
@@ -105,15 +57,47 @@ const loginUser = async (req, res) => {
         });
 
     } catch (error) {
+
         res.status(500).json({
             message: "Server error",
             error: error.message
         });
+
+    }
+};
+
+
+// GET CURRENT USER
+const getMe = async (req, res) => {
+    try {
+
+        const user = await User.findById(
+            req.user.userId
+        ).select("-password");
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
+
+        res.status(200).json({
+            message: "Authenticated successfully",
+            user
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            message: "Server error",
+            error: error.message
+        });
+
     }
 };
 
 
 module.exports = {
-    registerUser,
-    loginUser
+    loginUser,
+    getMe
 };

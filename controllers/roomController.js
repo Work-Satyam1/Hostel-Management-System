@@ -1,29 +1,33 @@
 const Room = require("../models/Room");
 const Hostel = require("../models/Hostel");
 
+// CREATE ROOM - ADMIN ONLY
 const createRoom = async (req, res) => {
     try {
         const {
             hostel,
             roomNumber,
-            capacity,
-            floor
+            floor,
+            capacity
         } = req.body;
 
-        if (!hostel || !roomNumber || !capacity || floor === undefined) {
+        // Check required fields
+        if (!hostel || !roomNumber || !floor || !capacity) {
             return res.status(400).json({
-                message: "Please provide all required fields"
+                message: "Please provide hostel, roomNumber, floor and capacity"
             });
         }
 
-        const hostelExists = await Hostel.findById(hostel);
+        // Check whether hostel exists
+        const existingHostel = await Hostel.findById(hostel);
 
-        if (!hostelExists) {
+        if (!existingHostel) {
             return res.status(404).json({
                 message: "Hostel not found"
             });
         }
 
+        // Check duplicate room
         const existingRoom = await Room.findOne({
             hostel,
             roomNumber
@@ -35,11 +39,14 @@ const createRoom = async (req, res) => {
             });
         }
 
+        // Create room
         const room = await Room.create({
             hostel,
             roomNumber,
+            floor,
             capacity,
-            floor
+            occupied: 0,
+            status: "available"
         });
 
         res.status(201).json({
@@ -56,8 +63,10 @@ const createRoom = async (req, res) => {
 };
 
 
+// GET ALL ROOMS
 const getRooms = async (req, res) => {
     try {
+
         const rooms = await Room.find()
             .populate("hostel", "name location");
 
@@ -75,7 +84,34 @@ const getRooms = async (req, res) => {
 };
 
 
+// GET SINGLE ROOM
+const getRoomById = async (req, res) => {
+    try {
+
+        const room = await Room.findById(req.params.id)
+            .populate("hostel", "name location");
+
+        if (!room) {
+            return res.status(404).json({
+                message: "Room not found"
+            });
+        }
+
+        res.status(200).json({
+            room
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+
 module.exports = {
     createRoom,
-    getRooms
+    getRooms,
+    getRoomById
 };
