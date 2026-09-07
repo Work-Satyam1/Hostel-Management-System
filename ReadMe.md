@@ -4,8 +4,8 @@ A REST API backend for a Hostel Management System built using **Node.js, Express
 
 The system is designed to manage students, hostels, rooms, room allocation, attendance, GPS-based attendance, complaints, leave requests and notices.
 
-> 🚧 Current Stage: Authentication + Student Management + Hostel Management completed.  
-> ➡️ Next: Room Management.
+> 🚧 Current Stage: Authentication + Student + Hostel + Warden + Room + Room Allocation APIs completed.  
+> ➡️ Next: Attendance Management + GPS/Geofencing.
 
 ---
 
@@ -106,8 +106,11 @@ hms_backend/
 │
 ├── controllers/
 │   ├── authController.js
+│   ├── adminController.js
 │   ├── studentController.js
-│   └── hostelController.js
+│   ├── hostelController.js
+│   ├── roomController.js
+│   └── roomAllocationController.js
 │
 ├── middleware/
 │   ├── authMiddleware.js
@@ -116,12 +119,18 @@ hms_backend/
 ├── models/
 │   ├── User.js
 │   ├── Student.js
-│   └── Hostel.js
+│   ├── Warden.js
+│   ├── Hostel.js
+│   ├── Room.js
+│   └── RoomAllocation.js
 │
 ├── routes/
 │   ├── authRoutes.js
+│   ├── adminRoutes.js
 │   ├── studentRoutes.js
-│   └── hostelRoutes.js
+│   ├── hostelRoutes.js
+│   ├── roomRoutes.js
+│   └── roomAllocationRoutes.js
 │
 ├── .env
 ├── .env.example
@@ -226,8 +235,6 @@ The application uses **JWT Bearer Authentication**.
 Authentication flow:
 
 ```text
-Register
-   ↓
 Login
    ↓
 Verify Email + Password
@@ -311,100 +318,21 @@ Exact warden permissions will be finalized as the project grows.
 
 # 🛡️ Important Role Security
 
-A student can register themselves.
+The current architecture does **not** expose public registration.
 
-However, a student **cannot register themselves as admin**.
+- The initial Admin is created using `createAdmin.js`.
+- Admin creates Student accounts.
+- Admin creates Warden accounts and assigns them to a Hostel.
+- All users authenticate through `/api/auth/login`.
+- Admin-only operations are protected by `authMiddleware` + `adminMiddleware`.
 
-For example, even if someone sends:
-
-```json
-{
-    "name": "Hacker",
-    "email": "hacker@gmail.com",
-    "password": "123456",
-    "role": "admin"
-}
-```
-
-the backend ignores the requested role.
-
-The backend creates:
-
-```text
-role = student
-```
-
-This prevents users from gaining admin privileges through public registration.
+This prevents an unauthenticated user from creating an Admin account.
 
 ---
 
 # 🔑 Authentication APIs
 
-## 1. Register User
-
-### Endpoint
-
-```http
-POST /api/auth/register
-```
-
-### URL
-
-```text
-http://localhost:5000/api/auth/register
-```
-
-### Authentication
-
-```text
-Public
-```
-
-### Request Body
-
-```json
-{
-    "name": "Test Student",
-    "email": "student@gmail.com",
-    "password": "123456"
-}
-```
-
-### Response
-
-```json
-{
-    "message": "User registered successfully",
-    "user": {
-        "id": "USER_ID",
-        "name": "Test Student",
-        "email": "student@gmail.com",
-        "role": "student"
-    }
-}
-```
-
-### Backend Flow
-
-```text
-POST /api/auth/register
-          ↓
-Validate input
-          ↓
-Check existing email
-          ↓
-Hash password
-          ↓
-Create User
-          ↓
-role = student
-          ↓
-Return response
-```
-
----
-
-# 2. Login User
+## Login User
 
 ### Endpoint
 
@@ -428,8 +356,8 @@ Public
 
 ```json
 {
-    "email": "student@gmail.com",
-    "password": "123456"
+    "email": "admin@hostel.com",
+    "password": "YOUR_PASSWORD"
 }
 ```
 
@@ -441,9 +369,9 @@ Public
     "token": "JWT_TOKEN",
     "user": {
         "id": "USER_ID",
-        "name": "Test Student",
-        "email": "student@gmail.com",
-        "role": "student"
+        "name": "Hostel Admin",
+        "email": "admin@hostel.com",
+        "role": "admin"
     }
 }
 ```
@@ -751,6 +679,195 @@ Response:
 
 ---
 
+# 👨‍💼 Admin APIs
+
+## Create Student
+
+```http
+POST /api/admin/students
+```
+
+Admin only.
+
+```json
+{
+    "name": "Rahul Sharma",
+    "email": "rahul@example.com",
+    "password": "Student@123"
+}
+```
+
+## Create Warden
+
+```http
+POST /api/admin/wardens
+```
+
+Admin only.
+
+```json
+{
+    "name": "Rahul Sharma",
+    "email": "warden@example.com",
+    "password": "Warden@123",
+    "employeeId": "W001",
+    "phone": "9876543210",
+    "hostel": "HOSTEL_ID"
+}
+```
+
+The `hostel` value must be a valid MongoDB Hostel ObjectId.
+
+---
+
+# 👨‍🏫 Warden Management
+
+A Warden is linked to a `User` account and assigned to a specific Hostel.
+
+Current Warden model fields:
+
+```text
+user
+employeeId
+phone
+hostel
+```
+
+Warden login uses the same:
+
+```http
+POST /api/auth/login
+```
+
+Warden-specific APIs and assigned-hostel authorization are the next refinement.
+
+---
+
+# 🚪 Room Management
+
+Room management is now implemented.
+
+### Room fields
+
+```text
+hostel
+roomNumber
+floor
+capacity
+occupied
+status
+```
+
+### Create Room
+
+```http
+POST /api/rooms
+```
+
+Admin only.
+
+```json
+{
+    "hostel": "HOSTEL_ID",
+    "roomNumber": "101",
+    "floor": 1,
+    "capacity": 4
+}
+```
+
+### Get Rooms
+
+```http
+GET /api/rooms
+```
+
+Authenticated users.
+
+### Get Room By ID
+
+```http
+GET /api/rooms/:id
+```
+
+Authenticated users.
+
+Room status can be:
+
+```text
+available
+full
+maintenance
+```
+
+The backend validates the Hostel before creating a room and prevents duplicate room numbers within the same Hostel.
+
+---
+
+# 🛏️ Room Allocation
+
+Room allocation is now implemented.
+
+### Allocate Student To Room
+
+```http
+POST /api/room-allocations
+```
+
+Admin only.
+
+```json
+{
+    "student": "STUDENT_PROFILE_ID",
+    "room": "ROOM_ID"
+}
+```
+
+The backend checks:
+
+```text
+Student exists
+       +
+Room exists
+       +
+Room is not under maintenance
+       +
+Room has available capacity
+       +
+Student has no active allocation
+       +
+Admin authorization
+```
+
+After successful allocation:
+
+```text
+Student
+   ↓
+Room Allocation
+   ↓
+Room occupied + 1
+   ↓
+If capacity reached → status = full
+```
+
+### Get Active Allocations
+
+```http
+GET /api/room-allocations
+```
+
+Admin only.
+
+### Student Room Lookup
+
+```http
+GET /api/students/my-room
+```
+
+The backend finds the Student profile from the authenticated JWT and returns the student's active room allocation.
+
+---
+
 # 🧩 Middleware
 
 The project currently uses two important middleware layers.
@@ -1017,12 +1134,19 @@ MongoDB
 | Method | Endpoint | Authentication | Permission |
 |--------|----------|----------------|------------|
 | GET | `/` | No | Public |
-| POST | `/api/auth/register` | No | Public |
 | POST | `/api/auth/login` | No | Public |
 | GET | `/api/auth/me` | Yes | Authenticated |
+| POST | `/api/admin/students` | Yes | Admin |
+| POST | `/api/admin/wardens` | Yes | Admin |
 | POST | `/api/students/profile` | Yes | Authenticated |
+| GET | `/api/students/my-room` | Yes | Authenticated |
 | POST | `/api/hostels` | Yes | Admin |
 | GET | `/api/hostels` | Yes | Authenticated |
+| POST | `/api/rooms` | Yes | Admin |
+| GET | `/api/rooms` | Yes | Authenticated |
+| GET | `/api/rooms/:id` | Yes | Authenticated |
+| POST | `/api/room-allocations` | Yes | Admin |
+| GET | `/api/room-allocations` | Yes | Admin |
 
 ---
 
@@ -1031,121 +1155,27 @@ MongoDB
 Recommended testing order:
 
 ```text
-1. Register
-      ↓
-2. Login
-      ↓
+1. Start server
+2. Login as Admin
 3. Copy JWT
-      ↓
-4. Test /auth/me
-      ↓
-5. Create Student Profile
-      ↓
-6. Get Hostels
-      ↓
-7. Test Admin Authorization
+4. Test /api/auth/me
+5. Create Hostel
+6. Get Hostel ID
+7. Create Warden
+8. Create Student
+9. Create Room
+10. Create Student Profile
+11. Allocate Room
+12. Get Student Room
+13. Get Active Allocations
+14. Test Admin Authorization
 ```
 
-# Test 1 — Register
-
-```http
-POST http://localhost:5000/api/auth/register
-```
-
-Body:
-
-```json
-{
-    "name": "Test Student",
-    "email": "student@gmail.com",
-    "password": "123456"
-}
-```
-
-Expected:
+For protected requests use:
 
 ```text
-201 Created
+Authorization → Bearer Token → YOUR_JWT_TOKEN
 ```
-
-# Test 2 — Login
-
-```http
-POST http://localhost:5000/api/auth/login
-```
-
-Body:
-
-```json
-{
-    "email": "student@gmail.com",
-    "password": "123456"
-}
-```
-
-Copy the `token` from the response.
-
-# Test 3 — Authentication
-
-```http
-GET http://localhost:5000/api/auth/me
-```
-
-Authorization:
-
-```text
-Bearer Token
-```
-
-Paste the JWT.
-
-Expected:
-
-```text
-200 OK
-```
-
-# Test 4 — Get Hostels
-
-```http
-GET http://localhost:5000/api/hostels
-```
-
-Authorization:
-
-```text
-Bearer Token
-```
-
-Expected:
-
-```text
-200 OK
-```
-
-# Test 5 — Student Creates Hostel
-
-Use a student JWT:
-
-```http
-POST http://localhost:5000/api/hostels
-```
-
-Expected:
-
-```text
-403 Forbidden
-```
-
-Response:
-
-```json
-{
-    "message": "Access denied. Admin only."
-}
-```
-
-This confirms role-based authorization works.
 
 ---
 
@@ -1203,72 +1233,32 @@ role = student
 
 ---
 
-# 🏠 Upcoming Room Management
+# 🏠 Room Management — Completed
 
-The next module is Room Management.
+Room management has been implemented with Hostel references, room capacity, occupied count and room status.
 
-Planned model:
+Implemented endpoints:
 
 ```text
-Room
-├── hostel
-├── roomNumber
-├── capacity
-├── occupiedBeds
-├── floor
-└── status
+POST /api/rooms
+GET  /api/rooms
+GET  /api/rooms/:id
 ```
 
-Example:
-
-```json
-{
-    "hostel": "HOSTEL_ID",
-    "roomNumber": "101",
-    "capacity": 4,
-    "floor": 1
-}
-```
-
-Only admins will create rooms.
-
-Students will be able to view room information.
+Only Admin can create rooms. Authenticated users can view rooms.
 
 ---
 
-# 🛏️ Planned Room Allocation
+# 🛏️ Room Allocation — Completed
 
-The admin will assign students to rooms.
-
-Example future endpoint:
+Room allocation has been implemented through:
 
 ```http
-POST /api/rooms/:roomId/allocate
+POST /api/room-allocations
+GET  /api/room-allocations
 ```
 
-The backend will check:
-
-```text
-Room exists
-       +
-Student exists
-       +
-Room has free capacity
-       +
-Student is not already allocated
-       +
-Admin authorization
-```
-
-Then:
-
-```text
-Student
-   ↓
-Room
-   ↓
-occupiedBeds + 1
-```
+The allocation service validates student existence, room existence, room capacity, maintenance status and duplicate active allocations. It also updates the room occupancy and status.
 
 ---
 
@@ -1350,7 +1340,6 @@ The student mobile application will contain:
 
 ```text
 Login
-Register
 Dashboard
 Profile
 Hostel Information
@@ -1397,7 +1386,7 @@ Reports
 - [x] dotenv
 - [x] CORS
 - [x] User Model
-- [x] Registration
+- [x] Admin Bootstrap
 - [x] Login
 - [x] bcrypt Password Hashing
 - [x] JWT Authentication
@@ -1422,21 +1411,24 @@ Reports
 
 ## Phase 4 — Room Management
 
-- [ ] Room Model
-- [ ] Create Room
-- [ ] Get Rooms
-- [ ] Update Room
-- [ ] Delete Room
-- [ ] Room Availability
-- [ ] Room Capacity
+- [x] Room Model
+- [x] Create Room
+- [x] Get Rooms
+- [x] Get Room By ID
+- [x] Room Availability
+- [x] Room Capacity
+- [x] Room Status
 
 ## Phase 5 — Room Allocation
 
-- [ ] Allocate Student
-- [ ] Remove Student
+- [x] Allocate Student
+- [x] Capacity Validation
+- [x] Active Allocation Validation
+- [x] Occupied Bed Tracking
+- [x] Student Room Lookup
+- [ ] Remove Student / Vacate Room
 - [ ] Room Transfer
-- [ ] Capacity Validation
-- [ ] Vacant Bed Tracking
+- [ ] Historical Allocation Support
 
 ## Phase 6 — Attendance
 
@@ -1636,7 +1628,7 @@ Backend
 ├── MongoDB                  ✅
 ├── Mongoose                 ✅
 ├── User Model               ✅
-├── Registration             ✅
+├── Admin Bootstrap          ✅
 ├── Login                    ✅
 ├── bcrypt                   ✅
 ├── JWT                      ✅
@@ -1647,14 +1639,24 @@ Backend
 ├── Hostel Model             ✅
 ├── Hostel Create API        ✅
 ├── Hostel Get API           ✅
+├── Warden Model             ✅
+├── Warden Creation API      ✅
+├── Hostel Assignment        ✅
+├── Room Model               ✅
+├── Room Create API          ✅
+├── Room Get APIs            ✅
+├── Room Capacity/Status     ✅
+├── Room Allocation API      ✅
+├── Active Allocation List   ✅
+├── Student Room Lookup      ✅
 │
-├── Room Management          🔄 NEXT
-├── Room Allocation          ⏳
+├── Warden APIs              🔄 NEXT
+├── Complaint Management     ⏳
+├── Leave                    ⏳
+├── Notices                  ⏳
 ├── Attendance               ⏳
 ├── GPS Attendance           ⏳
-├── Complaints               ⏳
-├── Leave                    ⏳
-└── Notices                  ⏳
+└── React / Expo Frontends   ⏳
 ```
 
 ---
@@ -1735,7 +1737,7 @@ This project is being developed as a full-stack Hostel Management System with a 
 
 # 🚀 Current Next Step
 
-The backend is currently ready to move from:
+The backend has progressed from:
 
 ```text
 Authentication
@@ -1744,21 +1746,39 @@ Student Management
       ↓
 Hostel Management
       ↓
-➡️ Room Management
+Warden Management
+      ↓
+Room Management
+      ↓
+Room Allocation
+      ↓
+➡️ Attendance Management
+      ↓
+GPS / Geofencing
 ```
 
-The next implementation will be:
+The next implementation focus is **Attendance API**, followed by GPS/geofencing-based attendance through the React Native + Expo student application.
+
+Planned attendance flow:
 
 ```text
-Room Model
-     ↓
-Room API
-     ↓
-Admin-only Room Creation
-     ↓
-Room Listing
-     ↓
-Room Capacity
-     ↓
-Room Allocation
+Student Login
+      ↓
+JWT Verification
+      ↓
+Identify Student from req.user.userId
+      ↓
+Get Current GPS Location
+      ↓
+Send Latitude + Longitude
+      ↓
+Calculate Distance from Allowed Location
+      ↓
+Check Geofence
+      ↓
+Check Attendance Time Window
+      ↓
+Check Duplicate Attendance
+      ↓
+Mark Present
 ```
