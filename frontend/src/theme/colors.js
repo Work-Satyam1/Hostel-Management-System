@@ -1,0 +1,27 @@
+export const colors = {
+  primary: '#2563eb',
+  primaryDark: '#1d4ed8',
+  primaryLight: '#dbeafe',
+  secondary: '#0f172a',
+  background: '#f8fafc',
+  card: '#ffffff',
+  textPrimary: '#0f172a',
+  textSecondary: '#64748b',
+  textMuted: '#94a3b8',
+  border: '#e2e8f0',
+  borderLight: '#f1f5f9',
+  success: '#16a34a',
+  successBg: '#dcfce7',
+  warning: '#d97706',
+  warningBg: '#fef3c7',
+  danger: '#dc2626',
+  dangerBg: '#fee2e2',
+  info: '#0284c7',
+  infoBg: '#e0f2fe',
+  pending: '#7c3aed',
+  pendingBg: '#ede9fe',
+  white: '#ffffff',
+  black: '#000000',
+};
+
+export default colors;
