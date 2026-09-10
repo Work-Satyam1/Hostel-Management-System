@@ -10,6 +10,7 @@ const hostelRoutes = require("./routes/hostelRoutes");
 const roomRoutes = require("./routes/roomRoutes");
 const roomAllocationRoutes =require("./routes/roomAllocationRoutes");
 const adminRoutes =require("./routes/adminRoutes");
+const wardenRoutes=require("./routes/wardenRoutes")
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use("/api/hostels", hostelRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/room-allocations", roomAllocationRoutes);
 app.use("/api/admin",adminRoutes);
+app.use("/api/wardens",wardenRoutes);
 
 
 
